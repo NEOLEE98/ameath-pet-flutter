@@ -15,6 +15,8 @@ class MainFlutterWindow: NSPanel {
     self.titleVisibility = .hidden
     self.titlebarAppearsTransparent = true
     self.isMovableByWindowBackground = true
+    self.styleMask.remove(.resizable)
+    self.level = .statusBar
 
     flutterViewController.view.wantsLayer = true
     flutterViewController.view.layer?.backgroundColor = NSColor.clear.cgColor
@@ -31,5 +33,9 @@ class MainFlutterWindow: NSPanel {
   override public func order(_ place: NSWindow.OrderingMode, relativeTo otherWin: Int) {
     super.order(place, relativeTo: otherWin)
     hiddenWindowAtLaunch()
+  }
+
+  override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+    return frameRect
   }
 }

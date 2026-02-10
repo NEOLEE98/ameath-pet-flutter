@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
@@ -26,6 +27,8 @@ Future<void> main(List<String> args) async {
     WindowManagerPlus.current.waitUntilReadyToShow(windowOptions, () async {
       await WindowManagerPlus.current.setAsFrameless();
       await WindowManagerPlus.current.setResizable(false);
+      await WindowManagerPlus.current.setMinimumSize(const Size(180, 180));
+      await WindowManagerPlus.current.setMaximumSize(const Size(180, 180));
       await WindowManagerPlus.current.setHasShadow(false);
       await WindowManagerPlus.current.setOpacity(1);
       await WindowManagerPlus.current.setVisibleOnAllWorkspaces(true);
@@ -199,6 +202,8 @@ class _PetStageState extends State<PetStage> {
   bool isDragging = false;
   bool isMoving = false;
   bool faceLeft = false;
+  Offset? screenOrigin;
+  Size? screenSize;
   Size? stageSize;
   EdgeInsets? stagePadding;
 
@@ -217,6 +222,16 @@ class _PetStageState extends State<PetStage> {
   }
 
   Future<void> _initRoamLoop() async {
+    if (Platform.isWindows || Platform.isMacOS) {
+      final display = await screenRetriever.getPrimaryDisplay();
+      final size = display.visibleSize ?? display.size;
+      final origin = display.visiblePosition ?? const Offset(0, 0);
+      setState(() {
+        screenOrigin = Offset(origin.dx.toDouble(), origin.dy.toDouble());
+        screenSize = Size(size.width.toDouble(), size.height.toDouble());
+      });
+    }
+
     roamTimer?.cancel();
     roamTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (isDragging || isMoving) return;
@@ -280,10 +295,11 @@ class _PetStageState extends State<PetStage> {
   }
 
   Future<void> _roamDesktop() async {
-    final size = stageSize ?? const Size(1280, 720);
+    final origin = screenOrigin ?? Offset.zero;
+    final size = screenSize ?? const Size(1280, 720);
     final next = Offset(
-      Random().nextDouble() * (size.width - desktopWindowSize),
-      Random().nextDouble() * (size.height - desktopWindowSize),
+      origin.dx + Random().nextDouble() * (size.width - desktopWindowSize),
+      origin.dy + Random().nextDouble() * (size.height - desktopWindowSize),
     );
     final start = await WindowManagerPlus.current.getPosition();
 
