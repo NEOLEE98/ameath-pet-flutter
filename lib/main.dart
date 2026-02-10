@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
@@ -127,7 +126,6 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
 
   Future<void> _startOverlay() async {
     if (!Platform.isAndroid) return;
-    final size = MediaQuery.sizeOf(context);
     final granted = await FlutterOverlayWindow.isPermissionGranted();
     if (!granted) {
       await FlutterOverlayWindow.requestPermission();
@@ -201,8 +199,6 @@ class _PetStageState extends State<PetStage> {
   bool isDragging = false;
   bool isMoving = false;
   bool faceLeft = false;
-  Offset? screenOrigin;
-  Size? screenSize;
   Size? stageSize;
   EdgeInsets? stagePadding;
 
@@ -221,15 +217,6 @@ class _PetStageState extends State<PetStage> {
   }
 
   Future<void> _initRoamLoop() async {
-    if (Platform.isWindows || Platform.isMacOS) {
-      final display = await screenRetriever.getPrimaryDisplay();
-      final size = display.visibleSize ?? display.size;
-      setState(() {
-        screenOrigin = Offset.zero;
-        screenSize = Size(size.width.toDouble(), size.height.toDouble());
-      });
-    }
-
     roamTimer?.cancel();
     roamTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (isDragging || isMoving) return;
@@ -293,11 +280,10 @@ class _PetStageState extends State<PetStage> {
   }
 
   Future<void> _roamDesktop() async {
-    final origin = screenOrigin ?? Offset.zero;
-    final size = screenSize ?? const Size(1280, 720);
+    final size = stageSize ?? const Size(1280, 720);
     final next = Offset(
-      origin.dx + Random().nextDouble() * (size.width - desktopWindowSize),
-      origin.dy + Random().nextDouble() * (size.height - desktopWindowSize),
+      Random().nextDouble() * (size.width - desktopWindowSize),
+      Random().nextDouble() * (size.height - desktopWindowSize),
     );
     final start = await WindowManagerPlus.current.getPosition();
 
