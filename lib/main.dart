@@ -151,7 +151,6 @@ class AndroidOverlayLauncher extends StatefulWidget {
 class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     with WidgetsBindingObserver {
   String status = 'Overlay permission not granted.';
-  AppSettings? lastSettings;
   bool overlayActive = false;
   bool hasPermission = false;
 
@@ -160,13 +159,10 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _refreshOverlayState();
-    lastSettings = widget.controller.value;
-    widget.controller.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_onSettingsChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -177,16 +173,6 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
       // no-op: user starts overlay manually
       _refreshOverlayState();
     }
-  }
-
-  Future<void> _onSettingsChanged() async {
-    if (!Platform.isAndroid) return;
-    final previous = lastSettings;
-    final current = widget.controller.value;
-    if (previous != null && previous.androidOverlayScale != current.androidOverlayScale) {
-      // Overlay resize is handled by the overlay process on Apply Settings.
-    }
-    lastSettings = current;
   }
 
   Future<void> _startOverlay() async {
