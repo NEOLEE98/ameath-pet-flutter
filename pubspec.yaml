@@ -1,4 +1,4 @@
-name: ameath_pet
+name: aemeath_pet
 version: 0.1.0
 publish_to: 'none'
 
@@ -27,4 +27,4 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: assets/ameath.png
+  image_path: assets/aemeath.png

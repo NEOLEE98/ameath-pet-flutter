@@ -100,7 +100,7 @@ class TrayController with TrayListener {
 
   Future<void> _setIcon() async {
     final iconPath = Platform.isWindows
-        ? 'assets/ameath.ico'
+        ? 'assets/aemeath.ico'
         : 'assets/tray_icon.png';
     await trayManager.setIcon(iconPath);
   }

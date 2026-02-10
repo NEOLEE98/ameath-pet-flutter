@@ -1,17 +1,17 @@
-# Ameath Pet - 飞行雪绒
+# Aemeath Pet - 飞行雪绒
 
 <p align="center">
-    <img src="assets/ameath.gif" alt="ameath gif" width="50%">
+    <img src="assets/aemeath.gif" alt="aemeath gif" width="50%">
 </p>
 
 ### English Readme | [中文说明](#中文说明)
 
-A tiny Ameath that lives on your screen. It roams, idles, and stays out of your way.
+A tiny Aemeath that lives on your screen. It roams, idles, and stays out of your way.
 
 ## What You Can Do
-- Drag Ameath around your screen
+- Drag Aemeath around your screen
 - Let it roam automatically with adjustable speed
-- Switch Ameath size
+- Switch Aemeath size
 - Keep it always-on-top on desktop
 - Control it from the tray menu (desktop)
 
@@ -22,17 +22,17 @@ A tiny Ameath that lives on your screen. It roams, idles, and stays out of your 
 
 ## How It Works
 ### Desktop
-- Ameath runs in a frameless always-on-top window.
+- Aemeath runs in a frameless always-on-top window.
 - Use the tray icon for quick actions like Show/Hide, size, and speed.
 
 ### Android
-- Ameath runs as a floating overlay.
+- Aemeath runs as a floating overlay.
 - You’ll be asked for “Display over other apps” permission.
 - Use **Start Overlay** in the app to launch it.
 - Use **Apply Settings** after changing size or speed.
 
 ## Settings
-- Ameath size (desktop)
+- Aemeath size (desktop)
 - Desktop roam speed
 - Mobile roam speed
 - Android overlay scale

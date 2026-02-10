@@ -50,7 +50,7 @@ Future<void> main(List<String> args) async {
     });
   }
 
-  runApp(const AmeathPetApp());
+  runApp(const AemeathPetApp());
 }
 
 bool isOverlayApp = false;
@@ -60,17 +60,17 @@ Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   isOverlayApp = true;
   await settingsController.load();
-  runApp(const AmeathOverlayApp());
+  runApp(const AemeathOverlayApp());
 }
 
-class AmeathPetApp extends StatefulWidget {
-  const AmeathPetApp({super.key});
+class AemeathPetApp extends StatefulWidget {
+  const AemeathPetApp({super.key});
 
   @override
-  State<AmeathPetApp> createState() => _AmeathPetAppState();
+  State<AemeathPetApp> createState() => _AemeathPetAppState();
 }
 
-class _AmeathPetAppState extends State<AmeathPetApp> {
+class _AemeathPetAppState extends State<AemeathPetApp> {
   TrayController? trayController;
 
   @override
@@ -103,7 +103,7 @@ class _AmeathPetAppState extends State<AmeathPetApp> {
     final isWindows = Platform.isWindows;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ameath Pet',
+      title: 'Aemeath Pet',
       navigatorKey: rootNavigatorKey,
       themeMode: ThemeMode.light,
       theme: ThemeData(
@@ -120,14 +120,14 @@ class _AmeathPetAppState extends State<AmeathPetApp> {
   }
 }
 
-class AmeathOverlayApp extends StatelessWidget {
-  const AmeathOverlayApp({super.key});
+class AemeathOverlayApp extends StatelessWidget {
+  const AemeathOverlayApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ameath Pet Overlay',
+      title: 'Aemeath Pet Overlay',
       themeMode: ThemeMode.light,
       theme: ThemeData(
         brightness: Brightness.light,
@@ -198,8 +198,8 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
       width: widget.controller.value.androidOverlaySize.toInt(),
       enableDrag: true,
       flag: OverlayFlag.defaultFlag,
-      overlayTitle: 'Ameath Pet',
-      overlayContent: 'Ameath Pet is running',
+      overlayTitle: 'Aemeath Pet',
+      overlayContent: 'Aemeath Pet is running',
       startPosition: OverlayPosition(mq.padding.left, mq.padding.top),
     );
     overlayActive = true;
@@ -259,7 +259,7 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3EF),
       appBar: AppBar(
-        title: const Text('Ameath Pet'),
+        title: const Text('Aemeath Pet'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
