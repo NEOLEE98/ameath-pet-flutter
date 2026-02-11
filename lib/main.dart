@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
@@ -21,20 +22,9 @@ Future<void> main(List<String> args) async {
   await settingsController.load();
   await settingsController.setupLaunchAtStartup();
 
-  WindowArgs windowArgs = WindowArgs.main;
-  WindowController? windowController;
+  final windowArgs = _parseWindowArgs(args);
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    windowController = await WindowController.fromCurrentEngine();
-    windowArgs = WindowArgs.fromJsonString(windowController.arguments);
-    final windowId = int.tryParse(windowController.windowId) ?? 0;
-    await WindowManagerPlus.ensureInitialized(windowId);
-    if (windowArgs.type == WindowArgs.typeSettings) {
-      await _configureSettingsWindow();
-      await _registerSettingsWindowHandlers(windowController);
-    } else {
-      await _configurePetWindow();
-      await _registerMainWindowHandlers(windowController);
-    }
+    await _initializeDesktopWindow(windowArgs);
   }
 
   if (windowArgs.type == WindowArgs.typeSettings) {
@@ -52,6 +42,55 @@ Future<void> overlayMain() async {
   isOverlayApp = true;
   await settingsController.load();
   runApp(const AemeathOverlayApp());
+}
+
+WindowArgs _parseWindowArgs(List<String> args) {
+  if (args.length >= 3 && args.first == 'multi_window') {
+    return WindowArgs.fromJsonString(args[2]);
+  }
+  return WindowArgs.main;
+}
+
+Future<void> _initializeDesktopWindow(WindowArgs windowArgs) async {
+  final ready = await _ensureWindowManagerReady();
+  if (ready) {
+    if (windowArgs.type == WindowArgs.typeSettings) {
+      await _configureSettingsWindow();
+    } else {
+      await _configurePetWindow();
+    }
+  }
+  await _tryRegisterWindowHandlers(windowArgs);
+}
+
+Future<bool> _ensureWindowManagerReady() async {
+  const retries = 5;
+  for (var attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      await WindowManagerPlus.ensureInitialized(0);
+      return true;
+    } on MissingPluginException {
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
+  }
+  return false;
+}
+
+Future<void> _tryRegisterWindowHandlers(WindowArgs windowArgs) async {
+  const retries = 5;
+  for (var attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      final windowController = await WindowController.fromCurrentEngine();
+      if (windowArgs.type == WindowArgs.typeSettings) {
+        await _registerSettingsWindowHandlers(windowController);
+      } else {
+        await _registerMainWindowHandlers(windowController);
+      }
+      return;
+    } on MissingPluginException {
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    }
+  }
 }
 
 Future<void> _configurePetWindow() async {
