@@ -749,6 +749,7 @@ class _PetStageState extends State<PetStage> {
       faceLeft = next.dx < start.dx;
     });
     await _animateWindowTo(next, speedPxPerSec: settings.desktopRoamSpeed);
+    if (isDragging) return;
     setState(() {
       isMoving = false;
       currentGif = 'assets/idle1.gif';
@@ -844,6 +845,7 @@ class _PetStageState extends State<PetStage> {
     });
 
     await _animateOverlayTo(start, next, speedPxPerSec: settings.mobileRoamSpeed);
+    if (isDragging) return;
     setState(() {
       isMoving = false;
       currentGif = 'assets/idle1.gif';
