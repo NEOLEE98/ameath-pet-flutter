@@ -4,8 +4,8 @@
     <img src="assets/aemeath.gif" alt="aemeath gif" width="50%">
 </p>
 
-Early access available in action artifact
-抢先体验可以去自动化里下载构建产物
+Early access available in Release
+抢先体验可以在Release里下载
 
 ### English Readme | [中文说明](#中文说明)
 
