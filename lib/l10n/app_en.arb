@@ -1,0 +1,43 @@
+{
+  "@@locale": "en",
+  "appTitlePet": "Aemeath Pet",
+  "appTitleOverlay": "Aemeath Pet Overlay",
+  "appTitleSettings": "Aemeath Settings",
+  "sectionAemeathSize": "Aemeath Size",
+  "sectionRoamSpeed": "Roam Speed",
+  "sectionAndroidOverlay": "Android Overlay",
+  "sectionStartup": "Startup",
+  "sectionLanguage": "Language",
+  "labelSize": "Size",
+  "labelDesktop": "Desktop",
+  "labelMobile": "Mobile",
+  "labelOverlaySize": "Overlay Size",
+  "showOverlayDebug": "Show overlay debug",
+  "launchAtStartup": "Launch at startup",
+  "statusOverlayPermissionNotGranted": "Overlay permission not granted.",
+  "statusOverlayRunning": "Overlay running. You can leave the app.",
+  "statusOverlayStopped": "Overlay stopped.",
+  "startOverlay": "Start Overlay",
+  "stopOverlay": "Stop Overlay",
+  "requestPermission": "Request Permission",
+  "trayShow": "Show",
+  "trayHide": "Hide",
+  "traySettings": "Settings",
+  "trayQuit": "Quit",
+  "trayLaunchAtStartupOn": "Launch at startup: On",
+  "trayLaunchAtStartupOff": "Launch at startup: Off",
+  "overlayNotificationTitle": "Aemeath Pet",
+  "overlayNotificationContent": "Aemeath Pet is running",
+  "noScreenInfo": "no screen info",
+  "languageSystem": "System",
+  "languageEnglish": "English",
+  "languageChinese": "Chinese",
+  "pxPerSecond": "{value} px/s",
+  "@pxPerSecond": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  }
+}

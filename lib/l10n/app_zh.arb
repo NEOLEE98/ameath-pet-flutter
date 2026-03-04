@@ -1,0 +1,43 @@
+{
+  "@@locale": "zh",
+  "appTitlePet": "飞行雪绒",
+  "appTitleOverlay": "飞行雪绒悬浮窗",
+  "appTitleSettings": "飞行雪绒设置",
+  "sectionAemeathSize": "飞行雪绒大小",
+  "sectionRoamSpeed": "移动速度",
+  "sectionAndroidOverlay": "Android 悬浮窗",
+  "sectionStartup": "启动项",
+  "sectionLanguage": "语言",
+  "labelSize": "大小",
+  "labelDesktop": "桌面端",
+  "labelMobile": "移动端",
+  "labelOverlaySize": "悬浮窗大小",
+  "showOverlayDebug": "显示悬浮窗调试信息",
+  "launchAtStartup": "开机启动",
+  "statusOverlayPermissionNotGranted": "未授予悬浮窗权限。",
+  "statusOverlayRunning": "悬浮窗正在运行。你可以离开应用。",
+  "statusOverlayStopped": "悬浮窗已停止。",
+  "startOverlay": "启动悬浮窗",
+  "stopOverlay": "停止悬浮窗",
+  "requestPermission": "请求权限",
+  "trayShow": "显示",
+  "trayHide": "隐藏",
+  "traySettings": "设置",
+  "trayQuit": "退出",
+  "trayLaunchAtStartupOn": "开机启动: 开",
+  "trayLaunchAtStartupOff": "开机启动: 关",
+  "overlayNotificationTitle": "飞行雪绒",
+  "overlayNotificationContent": "飞行雪绒正在运行",
+  "noScreenInfo": "无屏幕信息",
+  "languageSystem": "跟随系统",
+  "languageEnglish": "英语",
+  "languageChinese": "中文",
+  "pxPerSecond": "{value} 像素/秒",
+  "@pxPerSecond": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  }
+}

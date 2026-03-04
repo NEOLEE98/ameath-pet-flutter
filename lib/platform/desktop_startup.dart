@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/locale_utils.dart';
 import '../models/app_settings.dart';
 import '../models/window_args.dart';
 
@@ -13,7 +15,7 @@ Future<void> initializeDesktopWindow({
   final ready = await _ensureWindowManagerReady();
   if (ready) {
     if (windowArgs.type == WindowArgs.typeSettings) {
-      await _configureSettingsWindow();
+      await _configureSettingsWindow(settingsController);
     } else {
       await _configurePetWindow(settingsController);
     }
@@ -87,7 +89,12 @@ Future<void> _configurePetWindow(SettingsController settingsController) async {
   });
 }
 
-Future<void> _configureSettingsWindow() async {
+Future<void> _configureSettingsWindow(SettingsController settingsController) async {
+  final locale = effectiveAppLocale(
+    languageCode: settingsController.value.languageCode,
+    systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+  );
+  final strings = lookupAppLocalizations(locale);
   const settingsSize = Size(720, 720);
   const minSize = Size(520, 640);
   const maxSize = Size(1400, 1200);
@@ -95,7 +102,7 @@ Future<void> _configureSettingsWindow() async {
     size: settingsSize,
     center: true,
     backgroundColor: const Color(0xFFF5F3EF),
-    title: 'Aemeath Settings',
+    title: strings.appTitleSettings,
     titleBarStyle: TitleBarStyle.normal,
     skipTaskbar: false,
   );
@@ -143,6 +150,8 @@ Future<void> _registerMainWindowHandlers({
                 settingsController.value.showOverlayDebug,
             launchAtStartup: args['launchAtStartup'] as bool? ??
                 settingsController.value.launchAtStartup,
+            languageCode: args['languageCode'] as String? ??
+                settingsController.value.languageCode,
           );
           return true;
         }

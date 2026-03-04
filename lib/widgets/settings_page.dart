@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -12,24 +12,58 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ValueListenableBuilder<AppSettings>(
       valueListenable: controller,
       builder: (context, settings, _) {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F3EF),
           appBar: AppBar(
-            title: const Text('Aemeath Settings'),
+            title: Text(l10n.appTitleSettings),
             backgroundColor: const Color(0xFFF5F3EF),
             foregroundColor: Colors.black,
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _Section(
+                title: l10n.sectionLanguage,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return DropdownMenu<String>(
+                      initialSelection: settings.languageCode,
+                      width: constraints.maxWidth,
+                      textStyle: const TextStyle(color: Colors.black),
+                      inputDecorationTheme: const InputDecorationTheme(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      dropdownMenuEntries: [
+                        DropdownMenuEntry(
+                          value: '',
+                          label: l10n.languageSystem,
+                        ),
+                        DropdownMenuEntry(
+                          value: 'en',
+                          label: l10n.languageEnglish,
+                        ),
+                        DropdownMenuEntry(
+                          value: 'zh',
+                          label: l10n.languageChinese,
+                        ),
+                      ],
+                      onSelected: (value) {
+                        controller.setLanguageCode(value ?? '');
+                      },
+                    );
+                  },
+                ),
+              ),
               if (!Platform.isAndroid)
                 _Section(
-                  title: 'Aemeath Size',
+                  title: l10n.sectionAemeathSize,
                   child: _SliderRow(
-                    label: 'Size',
+                    label: l10n.labelSize,
                     value: settings.petScale,
                     min: 0.6,
                     max: 2.0,
@@ -39,30 +73,30 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               _Section(
-                title: 'Roam Speed',
+                title: l10n.sectionRoamSpeed,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux)
                       _SliderRow(
-                        label: 'Desktop',
+                        label: l10n.labelDesktop,
                         value: settings.desktopRoamSpeed,
                         min: 60,
                         max: 320,
                         divisions: 13,
-                        format: (v) => '${v.round()} px/s',
+                        format: (v) => l10n.pxPerSecond(v.round()),
                         onChanged: controller.setDesktopRoamSpeed,
                       ),
                     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux)
                       const SizedBox(height: 12),
                     if (Platform.isAndroid || Platform.isIOS)
                       _SliderRow(
-                        label: 'Mobile',
+                        label: l10n.labelMobile,
                         value: settings.mobileRoamSpeed,
                         min: 10,
                         max: 320,
                         divisions: 31,
-                        format: (v) => '${v.round()} px/s',
+                        format: (v) => l10n.pxPerSecond(v.round()),
                         onChanged: controller.setMobileRoamSpeed,
                       ),
                   ],
@@ -70,12 +104,12 @@ class SettingsPage extends StatelessWidget {
               ),
               if (Platform.isAndroid)
                 _Section(
-                  title: 'Android Overlay',
+                  title: l10n.sectionAndroidOverlay,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _SliderRow(
-                        label: 'Overlay Size',
+                        label: l10n.labelOverlaySize,
                         value: settings.androidOverlayScale,
                         min: 0.1,
                         max: 2.0,
@@ -86,7 +120,7 @@ class SettingsPage extends StatelessWidget {
                       const SizedBox(height: 12),
                       SwitchListTile.adaptive(
                         value: settings.showOverlayDebug,
-                        title: const Text('Show overlay debug'),
+                        title: Text(l10n.showOverlayDebug),
                         contentPadding: EdgeInsets.zero,
                         onChanged: controller.setShowOverlayDebug,
                       ),
@@ -95,10 +129,10 @@ class SettingsPage extends StatelessWidget {
                 ),
               if (Platform.isWindows || Platform.isMacOS || Platform.isLinux)
                 _Section(
-                  title: 'Startup',
+                  title: l10n.sectionStartup,
                   child: SwitchListTile.adaptive(
                     value: settings.launchAtStartup,
-                    title: const Text('Launch at startup'),
+                    title: Text(l10n.launchAtStartup),
                     contentPadding: EdgeInsets.zero,
                     onChanged: controller.setLaunchAtStartup,
                   ),

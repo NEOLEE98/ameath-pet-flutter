@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -18,6 +17,7 @@ class AppSettings {
     required this.androidOverlayScale,
     required this.showOverlayDebug,
     required this.launchAtStartup,
+    required this.languageCode,
   });
 
   final double petScale;
@@ -26,6 +26,7 @@ class AppSettings {
   final double androidOverlayScale;
   final bool showOverlayDebug;
   final bool launchAtStartup;
+  final String languageCode;
 
   double get petSize => basePetSize * petScale;
   double get desktopWindowSize => petSize + 40.0;
@@ -38,6 +39,7 @@ class AppSettings {
     double? androidOverlayScale,
     bool? showOverlayDebug,
     bool? launchAtStartup,
+    String? languageCode,
   }) {
     return AppSettings(
       petScale: petScale ?? this.petScale,
@@ -46,6 +48,7 @@ class AppSettings {
       androidOverlayScale: androidOverlayScale ?? this.androidOverlayScale,
       showOverlayDebug: showOverlayDebug ?? this.showOverlayDebug,
       launchAtStartup: launchAtStartup ?? this.launchAtStartup,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 
@@ -56,6 +59,7 @@ class AppSettings {
     androidOverlayScale: 1.0,
     showOverlayDebug: false,
     launchAtStartup: false,
+    languageCode: '',
   );
 }
 
@@ -69,6 +73,7 @@ class SettingsController extends ValueNotifier<AppSettings> {
   static const _keyOverlaySizeLegacy = 'androidOverlaySize';
   static const _keyShowOverlayDebug = 'showOverlayDebug';
   static const _keyLaunchAtStartup = 'launchAtStartup';
+  static const _keyLanguageCode = 'languageCode';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -83,6 +88,7 @@ class SettingsController extends ValueNotifier<AppSettings> {
           AppSettings.defaults.showOverlayDebug,
       launchAtStartup: prefs.getBool(_keyLaunchAtStartup) ??
           AppSettings.defaults.launchAtStartup,
+      languageCode: _loadLanguageCode(prefs),
     );
   }
 
@@ -96,6 +102,12 @@ class SettingsController extends ValueNotifier<AppSettings> {
       return legacySize / baseAndroidOverlaySize;
     }
     return AppSettings.defaults.androidOverlayScale;
+  }
+
+  String _loadLanguageCode(SharedPreferences prefs) {
+    final code = prefs.getString(_keyLanguageCode);
+    if (code == 'en' || code == 'zh') return code!;
+    return '';
   }
 
   Future<void> setupLaunchAtStartup() async {
@@ -157,5 +169,15 @@ class SettingsController extends ValueNotifier<AppSettings> {
     value = value.copyWith(launchAtStartup: enabled);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyLaunchAtStartup, enabled);
+  }
+
+  Future<void> setLanguageCode(String code) async {
+    value = value.copyWith(languageCode: code);
+    final prefs = await SharedPreferences.getInstance();
+    if (code.isEmpty) {
+      await prefs.remove(_keyLanguageCode);
+    } else {
+      await prefs.setString(_keyLanguageCode, code);
+    }
   }
 }

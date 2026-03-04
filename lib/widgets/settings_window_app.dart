@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/locale_utils.dart';
 import '../models/app_settings.dart';
 import '../models/window_args.dart';
 import 'settings_page.dart';
@@ -44,6 +46,7 @@ class _SettingsWindowAppState extends State<SettingsWindowApp> {
           'androidOverlayScale': current.androidOverlayScale,
           'showOverlayDebug': current.showOverlayDebug,
           'launchAtStartup': current.launchAtStartup,
+          'languageCode': current.languageCode,
         };
         final controllers = await WindowController.getAll();
         for (final controller in controllers) {
@@ -59,19 +62,32 @@ class _SettingsWindowAppState extends State<SettingsWindowApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Aemeath Settings',
-      themeMode: ThemeMode.light,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF5F3EF),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF5F3EF),
-          foregroundColor: Colors.black,
-        ),
-      ),
-      home: SettingsPage(controller: widget.controller),
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: widget.controller,
+      builder: (context, settings, _) {
+        final locale = effectiveAppLocale(
+          languageCode: settings.languageCode,
+          systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+        );
+        final l10n = lookupAppLocalizations(locale);
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: l10n.appTitleSettings,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          themeMode: ThemeMode.light,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: const Color(0xFFF5F3EF),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFFF5F3EF),
+              foregroundColor: Colors.black,
+            ),
+          ),
+          home: SettingsPage(controller: widget.controller),
+        );
+      },
     );
   }
 }

@@ -3,8 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 import '../widgets/settings_page.dart';
+
+enum _OverlayStatus {
+  permissionNotGranted,
+  running,
+  stopped,
+}
 
 class AndroidOverlayLauncher extends StatefulWidget {
   const AndroidOverlayLauncher({super.key, required this.controller});
@@ -17,7 +24,7 @@ class AndroidOverlayLauncher extends StatefulWidget {
 
 class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     with WidgetsBindingObserver {
-  String status = 'Overlay permission not granted.';
+  _OverlayStatus overlayStatus = _OverlayStatus.permissionNotGranted;
   bool overlayActive = false;
   bool hasPermission = false;
 
@@ -64,7 +71,7 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     if (!allowed) {
       setState(() {
         hasPermission = false;
-        status = 'Overlay permission not granted.';
+        overlayStatus = _OverlayStatus.permissionNotGranted;
       });
       return;
     }
@@ -77,8 +84,8 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
       width: widget.controller.value.androidOverlaySize.toInt(),
       enableDrag: true,
       flag: OverlayFlag.defaultFlag,
-      overlayTitle: 'Aemeath Pet',
-      overlayContent: 'Aemeath Pet is running',
+      overlayTitle: AppLocalizations.of(context)!.overlayNotificationTitle,
+      overlayContent: AppLocalizations.of(context)!.overlayNotificationContent,
       startPosition: OverlayPosition(mq.padding.left, mq.padding.top),
     );
     overlayActive = true;
@@ -86,7 +93,7 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     await _shareOverlayApplyData();
 
     setState(() {
-      status = 'Overlay running. You can leave the app.';
+      overlayStatus = _OverlayStatus.running;
     });
   }
 
@@ -95,7 +102,7 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     overlayActive = false;
     if (mounted) {
       setState(() {
-        status = 'Overlay stopped.';
+        overlayStatus = _OverlayStatus.stopped;
       });
     }
   }
@@ -108,11 +115,11 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     setState(() {
       hasPermission = allowed;
       overlayActive = active;
-      status = !allowed
-          ? 'Overlay permission not granted.'
+      overlayStatus = !allowed
+          ? _OverlayStatus.permissionNotGranted
           : active
-              ? 'Overlay running. You can leave the app.'
-              : 'Overlay stopped.';
+              ? _OverlayStatus.running
+              : _OverlayStatus.stopped;
     });
   }
 
@@ -145,10 +152,16 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final status = switch (overlayStatus) {
+      _OverlayStatus.permissionNotGranted => l10n.statusOverlayPermissionNotGranted,
+      _OverlayStatus.running => l10n.statusOverlayRunning,
+      _OverlayStatus.stopped => l10n.statusOverlayStopped,
+    };
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3EF),
       appBar: AppBar(
-        title: const Text('Aemeath Pet'),
+        title: Text(l10n.appTitlePet),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -184,8 +197,8 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
                       : _startOverlay,
                   child: Text(
                     hasPermission
-                        ? (overlayActive ? 'Stop Overlay' : 'Start Overlay')
-                        : 'Request Permission',
+                        ? (overlayActive ? l10n.stopOverlay : l10n.startOverlay)
+                        : l10n.requestPermission,
                   ),
                 ),
               ),

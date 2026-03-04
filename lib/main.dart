@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
+import 'l10n/app_localizations.dart';
 
+import 'l10n/locale_utils.dart';
 import 'models/app_settings.dart';
 import 'platform/android_overlay_launcher.dart';
 import 'platform/desktop_startup.dart';
@@ -95,19 +97,32 @@ class _AemeathPetAppState extends State<AemeathPetApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Aemeath Pet',
-      navigatorKey: rootNavigatorKey,
-      themeMode: ThemeMode.light,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: Colors.transparent,
-        canvasColor: Colors.transparent,
-      ),
-      home: Platform.isAndroid
-          ? AndroidOverlayLauncher(controller: settingsController)
-          : PetStage(controller: settingsController),
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: settingsController,
+      builder: (context, settings, _) {
+        final locale = effectiveAppLocale(
+          languageCode: settings.languageCode,
+          systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+        );
+        final l10n = lookupAppLocalizations(locale);
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: l10n.appTitlePet,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          navigatorKey: rootNavigatorKey,
+          themeMode: ThemeMode.light,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: Colors.transparent,
+            canvasColor: Colors.transparent,
+          ),
+          home: Platform.isAndroid
+              ? AndroidOverlayLauncher(controller: settingsController)
+              : PetStage(controller: settingsController),
+        );
+      },
     );
   }
 }
@@ -117,14 +132,27 @@ class AemeathOverlayApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Aemeath Pet Overlay',
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.transparent,
-        canvasColor: Colors.transparent,
-      ),
-      home: PetStage(controller: settingsController),
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: settingsController,
+      builder: (context, settings, _) {
+        final locale = effectiveAppLocale(
+          languageCode: settings.languageCode,
+          systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+        );
+        final l10n = lookupAppLocalizations(locale);
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: l10n.appTitleOverlay,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: ThemeData(
+            scaffoldBackgroundColor: Colors.transparent,
+            canvasColor: Colors.transparent,
+          ),
+          home: PetStage(controller: settingsController),
+        );
+      },
     );
   }
 }
@@ -644,6 +672,7 @@ class _OverlayDebugText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
@@ -668,9 +697,7 @@ class _OverlayDebugText extends StatelessWidget {
               '${usable.height.toStringAsFixed(1)}',
             ),
             if (!hasScreenInfo)
-              const Text(
-                'no screen info',
-              ),
+              Text(l10n.noScreenInfo),
           ],
         ),
       ),

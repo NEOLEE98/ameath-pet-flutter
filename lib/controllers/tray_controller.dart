@@ -1,10 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/widgets.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/locale_utils.dart';
 import '../models/app_settings.dart';
 import '../models/window_args.dart';
 
@@ -30,24 +32,29 @@ class TrayController with TrayListener {
 
   Future<void> refresh() async {
     try {
+      final locale = effectiveAppLocale(
+        languageCode: controller.value.languageCode,
+        systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+      );
+      final strings = lookupAppLocalizations(locale);
       final settings = controller.value;
       final isShown = await _getWindowShown();
       final showDisabled = isShown == true;
       final hideDisabled = isShown == false;
       final menu = Menu(items: [
-        MenuItem(key: 'show', label: 'Show', disabled: showDisabled),
-        MenuItem(key: 'hide', label: 'Hide', disabled: hideDisabled),
+        MenuItem(key: 'show', label: strings.trayShow, disabled: showDisabled),
+        MenuItem(key: 'hide', label: strings.trayHide, disabled: hideDisabled),
         MenuItem.separator(),
-        MenuItem(key: 'settings', label: 'Settings'),
+        MenuItem(key: 'settings', label: strings.traySettings),
         MenuItem.separator(),
         MenuItem(
           key: 'autostart',
           label: settings.launchAtStartup
-              ? 'Launch at startup: On'
-              : 'Launch at startup: Off',
+              ? strings.trayLaunchAtStartupOn
+              : strings.trayLaunchAtStartupOff,
         ),
         MenuItem.separator(),
-        MenuItem(key: 'quit', label: 'Quit'),
+        MenuItem(key: 'quit', label: strings.trayQuit),
       ]);
       await trayManager.setContextMenu(menu);
     } catch (_) {

@@ -16,11 +16,15 @@ dependencies:
   launch_at_startup: ^0.5.1
   package_info_plus: ^9.0.0
   shared_preferences: ^2.5.4
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/
