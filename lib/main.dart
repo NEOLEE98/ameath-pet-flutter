@@ -606,17 +606,19 @@ class _PetStageState extends State<PetStage> {
         children: [
           Center(child: pet),
           if (Platform.isAndroid && isOverlayApp && settings.showOverlayDebug)
-            Align(
-              alignment: Alignment.topLeft,
-              child: _OverlayDebugText(
-                position: overlayPosition,
-                usable: _getAndroidUsableArea(
-                  overlayScreenSize ?? size,
-                  settings.androidOverlaySize,
+            IgnorePointer(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: _OverlayDebugText(
+                  position: overlayPosition,
+                  usable: _getAndroidUsableArea(
+                    overlayScreenSize ?? size,
+                    settings.androidOverlaySize,
+                  ),
+                  screenSize: overlayScreenSize ?? size,
+                  overlaySize: settings.androidOverlaySize,
+                  hasScreenInfo: overlayScreenSize != null,
                 ),
-                screenSize: overlayScreenSize ?? size,
-                overlaySize: settings.androidOverlaySize,
-                hasScreenInfo: overlayScreenSize != null,
               ),
             ),
         ],
@@ -643,7 +645,6 @@ class _OverlayDebugText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(4),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.6),
@@ -659,11 +660,11 @@ class _OverlayDebugText extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'pos ${position.dx.toStringAsFixed(1)},'
+              'p ${position.dx.toStringAsFixed(1)},'
               '${position.dy.toStringAsFixed(1)}',
             ),
             Text(
-              'usable ${usable.width.toStringAsFixed(1)}x'
+              'u ${usable.width.toStringAsFixed(1)}x'
               '${usable.height.toStringAsFixed(1)}',
             ),
             if (!hasScreenInfo)

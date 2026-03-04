@@ -25,11 +25,13 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.controller.addListener(_onSettingsChanged);
     _refreshOverlayState();
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onSettingsChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -45,6 +47,10 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
 
   @override
   void didChangeMetrics() {
+    _shareOverlayApplyData();
+  }
+
+  void _onSettingsChanged() {
     _shareOverlayApplyData();
   }
 
