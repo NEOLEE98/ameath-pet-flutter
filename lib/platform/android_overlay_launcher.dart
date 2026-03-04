@@ -77,6 +77,8 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     }
     hasPermission = true;
 
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.of(context);
     await FlutterOverlayWindow.showOverlay(
       alignment: OverlayAlignment.topLeft,
@@ -84,14 +86,15 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
       width: widget.controller.value.androidOverlaySize.toInt(),
       enableDrag: true,
       flag: OverlayFlag.defaultFlag,
-      overlayTitle: AppLocalizations.of(context)!.overlayNotificationTitle,
-      overlayContent: AppLocalizations.of(context)!.overlayNotificationContent,
+      overlayTitle: l10n.overlayNotificationTitle,
+      overlayContent: l10n.overlayNotificationContent,
       startPosition: OverlayPosition(mq.padding.left, mq.padding.top),
     );
     overlayActive = true;
     await Future<void>.delayed(const Duration(milliseconds: 200));
     await _shareOverlayApplyData();
 
+    if (!mounted) return;
     setState(() {
       overlayStatus = _OverlayStatus.running;
     });
