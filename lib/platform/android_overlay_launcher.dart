@@ -39,7 +39,13 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     if (state == AppLifecycleState.resumed) {
       // no-op: user starts overlay manually
       _refreshOverlayState();
+      _shareOverlayApplyData();
     }
+  }
+
+  @override
+  void didChangeMetrics() {
+    _shareOverlayApplyData();
   }
 
   Future<void> _startOverlay() async {
@@ -71,21 +77,7 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
     );
     overlayActive = true;
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    final fullWidth = mq.size.width + mq.padding.left + mq.padding.right;
-    final fullHeight = mq.size.height + mq.padding.top + mq.padding.bottom;
-    final current = widget.controller.value;
-    await FlutterOverlayWindow.shareData({
-      'type': 'apply',
-      'mobileRoamSpeed': current.mobileRoamSpeed,
-      'androidOverlayScale': current.androidOverlayScale,
-      'showOverlayDebug': current.showOverlayDebug,
-      'screenWidth': fullWidth,
-      'screenHeight': fullHeight,
-      'padLeft': mq.padding.left,
-      'padTop': mq.padding.top,
-      'padRight': mq.padding.right,
-      'padBottom': mq.padding.bottom,
-    });
+    await _shareOverlayApplyData();
 
     setState(() {
       status = 'Overlay running. You can leave the app.';
@@ -115,6 +107,33 @@ class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
           : active
               ? 'Overlay running. You can leave the app.'
               : 'Overlay stopped.';
+    });
+  }
+
+  Future<void> _shareOverlayApplyData() async {
+    if (!Platform.isAndroid) return;
+    final active = overlayActive || await FlutterOverlayWindow.isActive();
+    if (!active || !mounted) return;
+    final view = View.of(context);
+    final size = view.physicalSize / view.devicePixelRatio;
+    final padding = EdgeInsets.fromViewPadding(
+      view.padding,
+      view.devicePixelRatio,
+    );
+    final fullWidth = size.width + padding.left + padding.right;
+    final fullHeight = size.height + padding.top + padding.bottom;
+    final current = widget.controller.value;
+    await FlutterOverlayWindow.shareData({
+      'type': 'apply',
+      'mobileRoamSpeed': current.mobileRoamSpeed,
+      'androidOverlayScale': current.androidOverlayScale,
+      'showOverlayDebug': current.showOverlayDebug,
+      'screenWidth': fullWidth,
+      'screenHeight': fullHeight,
+      'padLeft': padding.left,
+      'padTop': padding.top,
+      'padRight': padding.right,
+      'padBottom': padding.bottom,
     });
   }
 

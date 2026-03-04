@@ -238,6 +238,7 @@ class _PetStageState extends State<PetStage> {
       if (next != current) {
         widget.controller.value = next;
       }
+      await _ensureOverlayWithinBounds();
       _updateOverlayPosTimer(next.showOverlayDebug);
       if (next.showOverlayDebug) {
         setState(() {});
@@ -442,6 +443,29 @@ class _PetStageState extends State<PetStage> {
     final maxWidth = max(0.0, screenSize.width - left - right - overlaySize);
     final maxHeight = max(0.0, screenSize.height - top - bottom - overlaySize);
     return Rect.fromLTWH(left, top, maxWidth, maxHeight);
+  }
+
+  Future<void> _ensureOverlayWithinBounds() async {
+    if (!(Platform.isAndroid && isOverlayApp)) return;
+    final overlaySize = settings.androidOverlaySize;
+    final screen = overlayScreenSize ??
+        (WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
+            WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio);
+    final usable = _getAndroidUsableArea(screen, overlaySize);
+    final current = await FlutterOverlayWindow.getOverlayPosition();
+    final clamped = Offset(
+      current.x.toDouble().clamp(usable.left, usable.left + usable.width),
+      current.y.toDouble().clamp(usable.top, usable.top + usable.height),
+    );
+    if (clamped.dx == current.x && clamped.dy == current.y) return;
+    await FlutterOverlayWindow.moveOverlay(
+      OverlayPosition(clamped.dx, clamped.dy),
+    );
+    if (settings.showOverlayDebug && mounted) {
+      setState(() {
+        overlayPosition = clamped;
+      });
+    }
   }
 
   Future<void> _syncOverlayPosition() async {
