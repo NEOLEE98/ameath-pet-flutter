@@ -1,6 +1,8 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -72,16 +74,15 @@ class SettingsController extends ValueNotifier<AppSettings> {
     final prefs = await SharedPreferences.getInstance();
     value = AppSettings(
       petScale: prefs.getDouble(_keyPetScale) ?? AppSettings.defaults.petScale,
-      desktopRoamSpeed:
-          prefs.getDouble(_keyDesktopSpeed) ?? AppSettings.defaults.desktopRoamSpeed,
-      mobileRoamSpeed:
-          prefs.getDouble(_keyMobileSpeed) ?? AppSettings.defaults.mobileRoamSpeed,
+      desktopRoamSpeed: prefs.getDouble(_keyDesktopSpeed) ??
+          AppSettings.defaults.desktopRoamSpeed,
+      mobileRoamSpeed: prefs.getDouble(_keyMobileSpeed) ??
+          AppSettings.defaults.mobileRoamSpeed,
       androidOverlayScale: _loadOverlayScale(prefs),
-      showOverlayDebug:
-          prefs.getBool(_keyShowOverlayDebug) ??
-              AppSettings.defaults.showOverlayDebug,
-      launchAtStartup:
-          prefs.getBool(_keyLaunchAtStartup) ?? AppSettings.defaults.launchAtStartup,
+      showOverlayDebug: prefs.getBool(_keyShowOverlayDebug) ??
+          AppSettings.defaults.showOverlayDebug,
+      launchAtStartup: prefs.getBool(_keyLaunchAtStartup) ??
+          AppSettings.defaults.launchAtStartup,
     );
   }
 
@@ -123,12 +124,20 @@ class SettingsController extends ValueNotifier<AppSettings> {
     value = value.copyWith(mobileRoamSpeed: speed);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keyMobileSpeed, speed);
+    await FlutterOverlayWindow.shareData({
+      'type': 'apply',
+      'mobileRoamSpeed': speed
+    });
   }
 
   Future<void> setAndroidOverlayScale(double scale) async {
     value = value.copyWith(androidOverlayScale: scale);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keyOverlayScale, scale);
+    await FlutterOverlayWindow.shareData({
+      'type': 'apply',
+      'androidOverlayScale': scale
+    });
   }
 
   Future<void> setShowOverlayDebug(bool enabled) async {

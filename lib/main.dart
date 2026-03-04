@@ -2,17 +2,18 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 
-import 'app_settings.dart';
-import 'settings_page.dart';
-import 'tray_controller.dart';
-import 'window_args.dart';
+import 'models/app_settings.dart';
+import 'platform/android_overlay_launcher.dart';
+import 'platform/desktop_startup.dart';
+import 'controllers/tray_controller.dart';
+import 'widgets/settings_page.dart';
+import 'widgets/settings_window_app.dart';
+import 'models/window_args.dart';
 
 final SettingsController settingsController = SettingsController();
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -24,11 +25,14 @@ Future<void> main(List<String> args) async {
 
   final windowArgs = _parseWindowArgs(args);
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    await _initializeDesktopWindow(windowArgs);
+    await initializeDesktopWindow(
+      windowArgs: windowArgs,
+      settingsController: settingsController,
+    );
   }
 
   if (windowArgs.type == WindowArgs.typeSettings) {
-    runApp(const SettingsWindowApp());
+    runApp(SettingsWindowApp(controller: settingsController));
   } else {
     runApp(const AemeathPetApp());
   }
@@ -49,224 +53,6 @@ WindowArgs _parseWindowArgs(List<String> args) {
     return WindowArgs.fromJsonString(args[2]);
   }
   return WindowArgs.main;
-}
-
-Future<void> _initializeDesktopWindow(WindowArgs windowArgs) async {
-  final ready = await _ensureWindowManagerReady();
-  if (ready) {
-    if (windowArgs.type == WindowArgs.typeSettings) {
-      await _configureSettingsWindow();
-    } else {
-      await _configurePetWindow();
-    }
-  }
-  await _tryRegisterWindowHandlers(windowArgs);
-}
-
-Future<bool> _ensureWindowManagerReady() async {
-  const retries = 5;
-  for (var attempt = 0; attempt < retries; attempt += 1) {
-    try {
-      await WindowManagerPlus.ensureInitialized(0);
-      return true;
-    } on MissingPluginException {
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-    }
-  }
-  return false;
-}
-
-Future<void> _tryRegisterWindowHandlers(WindowArgs windowArgs) async {
-  const retries = 5;
-  for (var attempt = 0; attempt < retries; attempt += 1) {
-    try {
-      final windowController = await WindowController.fromCurrentEngine();
-      if (windowArgs.type == WindowArgs.typeSettings) {
-        await _registerSettingsWindowHandlers(windowController);
-      } else {
-        await _registerMainWindowHandlers(windowController);
-      }
-      return;
-    } on MissingPluginException {
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-    }
-  }
-}
-
-Future<void> _configurePetWindow() async {
-  final windowSize = settingsController.value.desktopWindowSize;
-  final windowOptions = WindowOptions(
-    size: Size(windowSize, windowSize),
-    center: true,
-    backgroundColor: Colors.transparent,
-    titleBarStyle: TitleBarStyle.hidden,
-    skipTaskbar: true,
-  );
-
-  WindowManagerPlus.current.waitUntilReadyToShow(windowOptions, () async {
-    await WindowManagerPlus.current.setAsFrameless();
-    await WindowManagerPlus.current.setResizable(false);
-    await WindowManagerPlus.current
-        .setMinimumSize(Size(windowSize, windowSize));
-    await WindowManagerPlus.current
-        .setMaximumSize(Size(windowSize, windowSize));
-    await WindowManagerPlus.current.setHasShadow(false);
-    await WindowManagerPlus.current.setOpacity(1);
-    await WindowManagerPlus.current.setVisibleOnAllWorkspaces(true);
-    await WindowManagerPlus.current.setAlwaysOnTop(true);
-    await WindowManagerPlus.current.setBackgroundColor(Colors.transparent);
-    await WindowManagerPlus.current.show();
-    await WindowManagerPlus.current.focus();
-  });
-}
-
-Future<void> _configureSettingsWindow() async {
-  const settingsSize = Size(720, 720);
-  const minSize = Size(520, 640);
-  const maxSize = Size(1400, 1200);
-  final windowOptions = WindowOptions(
-    size: settingsSize,
-    center: true,
-    backgroundColor: const Color(0xFFF5F3EF),
-    title: 'Aemeath Settings',
-    titleBarStyle: TitleBarStyle.normal,
-    skipTaskbar: false,
-  );
-
-  WindowManagerPlus.current.waitUntilReadyToShow(windowOptions, () async {
-    await WindowManagerPlus.current.setResizable(true);
-    await WindowManagerPlus.current.setMinimumSize(minSize);
-    await WindowManagerPlus.current.setMaximumSize(maxSize);
-    await WindowManagerPlus.current.setHasShadow(true);
-    await WindowManagerPlus.current.setAlwaysOnTop(false);
-    await WindowManagerPlus.current.setVisibleOnAllWorkspaces(false);
-    await WindowManagerPlus.current.setBackgroundColor(
-      const Color(0xFFF5F3EF),
-    );
-    await WindowManagerPlus.current.show();
-    await WindowManagerPlus.current.focus();
-  });
-}
-
-Future<void> _registerMainWindowHandlers(
-  WindowController windowController,
-) async {
-  await windowController.setWindowMethodHandler((call) async {
-    switch (call.method) {
-      case 'reloadSettings':
-        await settingsController.load();
-        return true;
-      case 'applySettings':
-        final args = call.arguments;
-        if (args is Map) {
-          settingsController.value = AppSettings(
-            petScale: (args['petScale'] as num?)?.toDouble() ??
-                settingsController.value.petScale,
-            desktopRoamSpeed:
-                (args['desktopRoamSpeed'] as num?)?.toDouble() ??
-                    settingsController.value.desktopRoamSpeed,
-            mobileRoamSpeed:
-                (args['mobileRoamSpeed'] as num?)?.toDouble() ??
-                    settingsController.value.mobileRoamSpeed,
-            androidOverlayScale:
-                (args['androidOverlayScale'] as num?)?.toDouble() ??
-                    settingsController.value.androidOverlayScale,
-            showOverlayDebug: args['showOverlayDebug'] as bool? ??
-                settingsController.value.showOverlayDebug,
-            launchAtStartup: args['launchAtStartup'] as bool? ??
-                settingsController.value.launchAtStartup,
-          );
-          return true;
-        }
-        return false;
-      case 'focus':
-        await WindowManagerPlus.current.show();
-        await WindowManagerPlus.current.focus();
-        return true;
-    }
-    return null;
-  });
-}
-
-Future<void> _registerSettingsWindowHandlers(
-  WindowController windowController,
-) async {
-  await windowController.setWindowMethodHandler((call) async {
-    switch (call.method) {
-      case 'focus':
-        await WindowManagerPlus.current.show();
-        await WindowManagerPlus.current.focus();
-        return true;
-    }
-    return null;
-  });
-}
-
-class SettingsWindowApp extends StatefulWidget {
-  const SettingsWindowApp({super.key});
-
-  @override
-  State<SettingsWindowApp> createState() => _SettingsWindowAppState();
-}
-
-class _SettingsWindowAppState extends State<SettingsWindowApp> {
-  Timer? _notifyTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    settingsController.addListener(_onSettingsChanged);
-  }
-
-  @override
-  void dispose() {
-    settingsController.removeListener(_onSettingsChanged);
-    _notifyTimer?.cancel();
-    super.dispose();
-  }
-
-  void _onSettingsChanged() {
-    _notifyTimer?.cancel();
-    _notifyTimer = Timer(const Duration(milliseconds: 200), () async {
-      try {
-        final current = settingsController.value;
-        final payload = <String, dynamic>{
-          'petScale': current.petScale,
-          'desktopRoamSpeed': current.desktopRoamSpeed,
-          'mobileRoamSpeed': current.mobileRoamSpeed,
-          'androidOverlayScale': current.androidOverlayScale,
-          'showOverlayDebug': current.showOverlayDebug,
-          'launchAtStartup': current.launchAtStartup,
-        };
-        final controllers = await WindowController.getAll();
-        for (final controller in controllers) {
-          final args = WindowArgs.fromJsonString(controller.arguments);
-          if (args.type == WindowArgs.typeMain) {
-            await controller.invokeMethod('applySettings', payload);
-            break;
-          }
-        }
-      } catch (_) {}
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Aemeath Settings',
-      themeMode: ThemeMode.light,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF5F3EF),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF5F3EF),
-          foregroundColor: Colors.black,
-        ),
-      ),
-      home: SettingsPage(controller: settingsController),
-    );
-  }
 }
 
 class AemeathPetApp extends StatefulWidget {
@@ -316,7 +102,6 @@ class _AemeathPetAppState extends State<AemeathPetApp> {
       themeMode: ThemeMode.light,
       theme: ThemeData(
         brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B8E23)),
         scaffoldBackgroundColor: Colors.transparent,
         canvasColor: Colors.transparent,
       ),
@@ -335,182 +120,11 @@ class AemeathOverlayApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Aemeath Pet Overlay',
-      themeMode: ThemeMode.light,
       theme: ThemeData(
-        brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.transparent,
         canvasColor: Colors.transparent,
       ),
       home: PetStage(controller: settingsController),
-    );
-  }
-}
-
-class AndroidOverlayLauncher extends StatefulWidget {
-  const AndroidOverlayLauncher({super.key, required this.controller});
-
-  final SettingsController controller;
-
-  @override
-  State<AndroidOverlayLauncher> createState() => _AndroidOverlayLauncherState();
-}
-
-class _AndroidOverlayLauncherState extends State<AndroidOverlayLauncher>
-    with WidgetsBindingObserver {
-  String status = 'Overlay permission not granted.';
-  bool overlayActive = false;
-  bool hasPermission = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refreshOverlayState();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // no-op: user starts overlay manually
-      _refreshOverlayState();
-    }
-  }
-
-  Future<void> _startOverlay() async {
-    if (!Platform.isAndroid) return;
-    final granted = await FlutterOverlayWindow.isPermissionGranted();
-    if (!granted) {
-      await FlutterOverlayWindow.requestPermission();
-    }
-    final allowed = await FlutterOverlayWindow.isPermissionGranted();
-    if (!allowed) {
-      setState(() {
-        hasPermission = false;
-        status = 'Overlay permission not granted.';
-      });
-      return;
-    }
-    hasPermission = true;
-
-    final mq = MediaQuery.of(context);
-    await FlutterOverlayWindow.showOverlay(
-      alignment: OverlayAlignment.topLeft,
-      height: widget.controller.value.androidOverlaySize.toInt(),
-      width: widget.controller.value.androidOverlaySize.toInt(),
-      enableDrag: true,
-      flag: OverlayFlag.defaultFlag,
-      overlayTitle: 'Aemeath Pet',
-      overlayContent: 'Aemeath Pet is running',
-      startPosition: OverlayPosition(mq.padding.left, mq.padding.top),
-    );
-    overlayActive = true;
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    final fullWidth =
-        mq.size.width + mq.padding.left + mq.padding.right;
-    final fullHeight =
-        mq.size.height + mq.padding.top + mq.padding.bottom;
-    final current = widget.controller.value;
-    await FlutterOverlayWindow.shareData({
-      'type': 'apply',
-      'petScale': current.petScale,
-      'mobileRoamSpeed': current.mobileRoamSpeed,
-      'androidOverlayScale': current.androidOverlayScale,
-      'showOverlayDebug': current.showOverlayDebug,
-      'screenWidth': fullWidth,
-      'screenHeight': fullHeight,
-      'padLeft': mq.padding.left,
-      'padTop': mq.padding.top,
-      'padRight': mq.padding.right,
-      'padBottom': mq.padding.bottom,
-    });
-
-    setState(() {
-      status = 'Overlay running. You can leave the app.';
-    });
-  }
-
-  Future<void> _stopOverlay() async {
-    await FlutterOverlayWindow.closeOverlay();
-    overlayActive = false;
-    if (mounted) {
-      setState(() {
-        status = 'Overlay stopped.';
-      });
-    }
-  }
-
-  Future<void> _refreshOverlayState() async {
-    if (!Platform.isAndroid) return;
-    final allowed = await FlutterOverlayWindow.isPermissionGranted();
-    final active = await FlutterOverlayWindow.isActive();
-    if (!mounted) return;
-    setState(() {
-      hasPermission = allowed;
-      overlayActive = active;
-      status = !allowed
-          ? 'Overlay permission not granted.'
-          : active
-              ? 'Overlay running. You can leave the app.'
-              : 'Overlay stopped.';
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F3EF),
-      appBar: AppBar(
-        title: const Text('Aemeath Pet'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SettingsPage(
-                    controller: widget.controller,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                status,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: hasPermission
-                      ? (overlayActive ? _stopOverlay : _startOverlay)
-                      : _startOverlay,
-                  child: Text(
-                    hasPermission
-                        ? (overlayActive ? 'Stop Overlay' : 'Start Overlay')
-                        : 'Request Permission',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -536,14 +150,10 @@ class _PetStageState extends State<PetStage> {
   ];
 
   String currentGif = 'assets/idle1.gif';
-  Offset position = const Offset(120, 220);
   Timer? idleTimer;
   Timer? roamTimer;
-  Timer? _windowMoveTimer;
-  Timer? _mobileMoveTimer;
-  Timer? _overlayMoveTimer;
-  Completer<void>? _windowMoveCompleter;
-  Completer<void>? _overlayMoveCompleter;
+  Timer? _moveTimer;
+  Completer<void>? _moveCompleter;
   StreamSubscription<dynamic>? overlaySubscription;
   Timer? overlayPosTimer;
   Size? overlayScreenSize;
@@ -553,8 +163,6 @@ class _PetStageState extends State<PetStage> {
   bool faceLeft = false;
   Offset? screenOrigin;
   Size? screenSize;
-  Size? stageSize;
-  EdgeInsets? stagePadding;
   AppSettings? lastSettings;
   Offset overlayPosition = Offset.zero;
 
@@ -589,7 +197,6 @@ class _PetStageState extends State<PetStage> {
       if (message is! Map) return;
       if (message['type'] != 'apply') return;
       final current = widget.controller.value;
-      final petScale = (message['petScale'] as num?)?.toDouble();
       final mobileSpeed = (message['mobileRoamSpeed'] as num?)?.toDouble();
       final overlayScale = (message['androidOverlayScale'] as num?)?.toDouble();
       final showDebug = _parseBool(message['showOverlayDebug']);
@@ -610,7 +217,6 @@ class _PetStageState extends State<PetStage> {
       }
 
       final next = current.copyWith(
-        petScale: petScale ?? current.petScale,
         mobileRoamSpeed: mobileSpeed ?? current.mobileRoamSpeed,
         androidOverlayScale: overlayScale ?? current.androidOverlayScale,
         showOverlayDebug: showDebug ?? current.showOverlayDebug,
@@ -674,8 +280,8 @@ class _PetStageState extends State<PetStage> {
       if (isDragging || isMoving) return;
       if (Platform.isWindows || Platform.isMacOS) {
         _roamDesktop();
-      } else {
-        _roamMobile();
+      } else if (Platform.isAndroid && isOverlayApp) {
+        _roamAndroidOverlay();
       }
     });
   }
@@ -708,14 +314,11 @@ class _PetStageState extends State<PetStage> {
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (Platform.isWindows || Platform.isMacOS) return;
-    if (Platform.isAndroid && isOverlayApp) return;
-    setState(() {
-      if (details.delta.dx.abs() > 0.1) {
+    if (details.delta.dx.abs() > 0.1) {
+      setState(() {
         faceLeft = details.delta.dx < 0;
-      }
-      position += details.delta;
-    });
+      });
+    }
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -729,7 +332,9 @@ class _PetStageState extends State<PetStage> {
       _roamDesktop();
       return;
     }
-    _roamMobile();
+    if (Platform.isAndroid && isOverlayApp) {
+      _roamAndroidOverlay();
+    }
   }
 
   Future<void> _roamDesktop() async {
@@ -760,8 +365,8 @@ class _PetStageState extends State<PetStage> {
     Offset target, {
     required double speedPxPerSec,
   }) async {
-    _windowMoveTimer?.cancel();
-    _safeComplete(_windowMoveCompleter);
+    _moveTimer?.cancel();
+    _safeComplete(_moveCompleter);
     final start = await WindowManagerPlus.current.getPosition();
     final distance = (target - start).distance;
     final durationMs =
@@ -772,8 +377,8 @@ class _PetStageState extends State<PetStage> {
     var tick = 0;
 
     final completer = Completer<void>();
-    _windowMoveCompleter = completer;
-    _windowMoveTimer = Timer.periodic(frame, (timer) async {
+    _moveCompleter = completer;
+    _moveTimer = Timer.periodic(frame, (timer) async {
       if (isDragging) {
         timer.cancel();
         _safeComplete(completer);
@@ -798,35 +403,10 @@ class _PetStageState extends State<PetStage> {
     return completer.future;
   }
 
-  void _roamMobile() {
-    if (isDragging) return;
-    if (Platform.isAndroid && isOverlayApp) {
-      _roamAndroidOverlay();
-      return;
-    }
-    isMoving = true;
-    _setGif('assets/move.gif');
-    final padding =
-        isOverlayApp ? EdgeInsets.zero : (stagePadding ?? EdgeInsets.zero);
-    final size = stageSize ?? MediaQuery.sizeOf(context);
-    final petSize = (Platform.isAndroid && isOverlayApp)
-        ? settings.androidOverlaySize
-        : settings.petSize;
-    final usableHeight = max(0.0, size.height - padding.vertical);
-    final next = Offset(
-      Random().nextDouble() * (size.width - petSize),
-      padding.top + Random().nextDouble() * (usableHeight - petSize),
-    );
-
-    final start = position;
-    faceLeft = next.dx < start.dx;
-    _animateMobileTo(start, next, speedPxPerSec: settings.mobileRoamSpeed);
-  }
-
   Future<void> _roamAndroidOverlay() async {
     if (isDragging) return;
     final overlaySize = settings.androidOverlaySize;
-    final screenSize = _getAndroidScreenSize() ??
+    final screenSize = overlayScreenSize ??
         (WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
             WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio);
     final usable = _getAndroidUsableArea(screenSize, overlaySize);
@@ -853,17 +433,8 @@ class _PetStageState extends State<PetStage> {
     });
   }
 
-  Size? _getAndroidScreenSize() {
-    if (Platform.isAndroid && isOverlayApp && overlayScreenSize != null) {
-      return overlayScreenSize;
-    }
-    return stageSize;
-  }
-
   Rect _getAndroidUsableArea(Size screenSize, double overlaySize) {
-    final padding = (Platform.isAndroid && isOverlayApp)
-        ? (overlayPadding ?? EdgeInsets.zero)
-        : (stagePadding ?? EdgeInsets.zero);
+    final padding = overlayPadding ?? EdgeInsets.zero;
     final left = padding.left;
     final top = padding.top;
     final right = padding.right;
@@ -907,8 +478,8 @@ class _PetStageState extends State<PetStage> {
     Offset target, {
     required double speedPxPerSec,
   }) async {
-    _overlayMoveTimer?.cancel();
-    _safeComplete(_overlayMoveCompleter);
+    _moveTimer?.cancel();
+    _safeComplete(_moveCompleter);
     final distance = (target - start).distance;
     final durationMs =
         max(_minMoveDurationMs, (distance / speedPxPerSec * 1000).round());
@@ -918,8 +489,8 @@ class _PetStageState extends State<PetStage> {
     var tick = 0;
 
     final completer = Completer<void>();
-    _overlayMoveCompleter = completer;
-    _overlayMoveTimer = Timer.periodic(frame, (timer) async {
+    _moveCompleter = completer;
+    _moveTimer = Timer.periodic(frame, (timer) async {
       if (isDragging) {
         timer.cancel();
         _safeComplete(completer);
@@ -958,61 +529,11 @@ class _PetStageState extends State<PetStage> {
     return completer.future;
   }
 
-  void _animateMobileTo(
-    Offset start,
-    Offset target, {
-    required double speedPxPerSec,
-  }) {
-    _mobileMoveTimer?.cancel();
-    final distance = (target - start).distance;
-    final durationMs =
-        max(_minMoveDurationMs, (distance / speedPxPerSec * 1000).round());
-    final duration = Duration(milliseconds: durationMs);
-    const frame = Duration(milliseconds: 16);
-    final steps = max(1, duration.inMilliseconds ~/ frame.inMilliseconds);
-    var tick = 0;
-
-    _mobileMoveTimer = Timer.periodic(frame, (timer) {
-      if (isDragging) {
-        timer.cancel();
-        setState(() {
-          isMoving = false;
-        });
-        return;
-      }
-      tick += 1;
-      final t = tick / steps;
-      if (t >= 1) {
-        timer.cancel();
-        setState(() {
-          position = target;
-          isMoving = false;
-          currentGif = 'assets/idle1.gif';
-        });
-        return;
-      }
-      final eased = Curves.easeInOut.transform(t);
-      final lerp = Offset(
-        start.dx + (target.dx - start.dx) * eased,
-        start.dy + (target.dy - start.dy) * eased,
-      );
-      setState(() {
-        position = lerp;
-      });
-    });
-  }
-
   void _stopRoam({bool resetGif = true}) {
-    _windowMoveTimer?.cancel();
-    _windowMoveTimer = null;
-    _safeComplete(_windowMoveCompleter);
-    _windowMoveCompleter = null;
-    _mobileMoveTimer?.cancel();
-    _mobileMoveTimer = null;
-    _overlayMoveTimer?.cancel();
-    _overlayMoveTimer = null;
-    _safeComplete(_overlayMoveCompleter);
-    _overlayMoveCompleter = null;
+    _moveTimer?.cancel();
+    _moveTimer = null;
+    _safeComplete(_moveCompleter);
+    _moveCompleter = null;
     if (isMoving) {
       setState(() {
         isMoving = false;
@@ -1032,29 +553,9 @@ class _PetStageState extends State<PetStage> {
   Widget build(BuildContext context) {
     final view = View.of(context);
     final size = view.physicalSize / view.devicePixelRatio;
-    final rawPadding = EdgeInsets.fromViewPadding(
-      view.padding,
-      view.devicePixelRatio,
-    );
-    final padding = rawPadding;
-    stageSize = size;
-    stagePadding = padding;
-    final petSize = settings.petSize;
-    final usableHeight = max(0.0, size.height - padding.vertical);
-    final clamped = Offset(
-      position.dx.clamp(0.0, max(0.0, size.width - petSize)),
-      position.dy.clamp(
-        padding.top,
-        max(padding.top, padding.top + usableHeight - petSize),
-      ),
-    );
-
-    if (clamped != position) {
-      position = clamped;
-    }
-
-    final isDesktop = Platform.isWindows || Platform.isMacOS;
-    final isAndroidOverlay = Platform.isAndroid && isOverlayApp;
+    final petSize = (Platform.isAndroid && isOverlayApp)
+        ? settings.androidOverlaySize
+        : settings.petSize;
     final pet = GestureDetector(
       onPanStart: _onPanStart,
       onPanUpdate: _onPanUpdate,
@@ -1077,35 +578,25 @@ class _PetStageState extends State<PetStage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: (isDesktop || isAndroidOverlay)
-          ? Stack(
-              children: [
-                Center(child: pet),
-                if (isAndroidOverlay && settings.showOverlayDebug)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: _OverlayDebugText(
-                      position: overlayPosition,
-                      usable: _getAndroidUsableArea(
-                        _getAndroidScreenSize() ?? size,
-                        settings.androidOverlaySize,
-                      ),
-                      screenSize: _getAndroidScreenSize() ?? size,
-                      overlaySize: settings.androidOverlaySize,
-                      hasScreenInfo: overlayScreenSize != null,
-                    ),
-                  ),
-              ],
-            )
-          : Stack(
-              children: [
-                Positioned(
-                  left: position.dx,
-                  top: position.dy,
-                  child: pet,
+      body: Stack(
+        children: [
+          Center(child: pet),
+          if (Platform.isAndroid && isOverlayApp && settings.showOverlayDebug)
+            Align(
+              alignment: Alignment.topLeft,
+              child: _OverlayDebugText(
+                position: overlayPosition,
+                usable: _getAndroidUsableArea(
+                  overlayScreenSize ?? size,
+                  settings.androidOverlaySize,
                 ),
-              ],
+                screenSize: overlayScreenSize ?? size,
+                overlaySize: settings.androidOverlaySize,
+                hasScreenInfo: overlayScreenSize != null,
+              ),
             ),
+        ],
+      ),
     );
   }
 }
@@ -1131,7 +622,7 @@ class _OverlayDebugText extends StatelessWidget {
       margin: const EdgeInsets.all(4),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(4),
       ),
       child: DefaultTextStyle(

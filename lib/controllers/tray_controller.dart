@@ -5,8 +5,8 @@ import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager_plus/window_manager_plus.dart';
 
-import 'app_settings.dart';
-import 'window_args.dart';
+import '../models/app_settings.dart';
+import '../models/window_args.dart';
 
 class TrayController with TrayListener {
   TrayController({
@@ -153,9 +153,5 @@ class TrayController with TrayListener {
     } catch (_) {
       return null;
     }
-  }
-
-  bool _isClose(double value, double target) {
-    return (value - target).abs() < 0.001;
   }
 }

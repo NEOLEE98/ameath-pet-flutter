@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-import 'app_settings.dart';
+import '../models/app_settings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.controller});
@@ -82,34 +82,6 @@ class SettingsPage extends StatelessWidget {
                         divisions: 19,
                         format: (v) => '${v.toStringAsFixed(1)}x',
                         onChanged: controller.setAndroidOverlayScale,
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final mq = MediaQuery.of(context);
-                            final fullWidth =
-                                mq.size.width + mq.padding.left + mq.padding.right;
-                            final fullHeight =
-                                mq.size.height + mq.padding.top + mq.padding.bottom;
-                            final current = controller.value;
-                            await FlutterOverlayWindow.shareData({
-                              'type': 'apply',
-                              'petScale': current.petScale,
-                              'mobileRoamSpeed': current.mobileRoamSpeed,
-                              'androidOverlayScale': current.androidOverlayScale,
-                              'showOverlayDebug': current.showOverlayDebug,
-                              'screenWidth': fullWidth,
-                              'screenHeight': fullHeight,
-                              'padLeft': mq.padding.left,
-                              'padTop': mq.padding.top,
-                              'padRight': mq.padding.right,
-                              'padBottom': mq.padding.bottom,
-                            });
-                          },
-                          child: const Text('Apply Settings'),
-                        ),
                       ),
                       const SizedBox(height: 12),
                       SwitchListTile.adaptive(
