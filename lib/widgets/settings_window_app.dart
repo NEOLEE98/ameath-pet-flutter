@@ -7,6 +7,8 @@ import '../l10n/app_localizations.dart';
 import '../l10n/locale_utils.dart';
 import '../models/app_settings.dart';
 import '../models/window_args.dart';
+import '../services/desktop_update_notice.dart';
+import '../services/update_prompt.dart';
 import 'settings_page.dart';
 
 class SettingsWindowApp extends StatefulWidget {
@@ -20,11 +22,16 @@ class SettingsWindowApp extends StatefulWidget {
 
 class _SettingsWindowAppState extends State<SettingsWindowApp> {
   Timer? _notifyTimer;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  bool _isShowingUpdatePrompt = false;
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onSettingsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consumePendingUpdate();
+    });
   }
 
   @override
@@ -32,6 +39,33 @@ class _SettingsWindowAppState extends State<SettingsWindowApp> {
     widget.controller.removeListener(_onSettingsChanged);
     _notifyTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _consumePendingUpdate() async {
+    if (_isShowingUpdatePrompt) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    final result = await DesktopUpdateNoticeStore.peek();
+    if (!mounted || result == null || !result.hasUpdate) {
+      return;
+    }
+    final dialogContext = _navigatorKey.currentContext;
+    if (dialogContext == null || !dialogContext.mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _consumePendingUpdate();
+      });
+      return;
+    }
+    _isShowingUpdatePrompt = true;
+    try {
+      await showUpdateAvailableDialog(dialogContext, result);
+      await DesktopUpdateNoticeStore.clear();
+    } finally {
+      _isShowingUpdatePrompt = false;
+    }
   }
 
   void _onSettingsChanged() {
@@ -73,6 +107,7 @@ class _SettingsWindowAppState extends State<SettingsWindowApp> {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: l10n.appTitleSettings,
+          navigatorKey: _navigatorKey,
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

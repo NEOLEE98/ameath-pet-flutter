@@ -89,7 +89,8 @@ Future<void> _configurePetWindow(SettingsController settingsController) async {
   });
 }
 
-Future<void> _configureSettingsWindow(SettingsController settingsController) async {
+Future<void> _configureSettingsWindow(
+    SettingsController settingsController) async {
   final locale = effectiveAppLocale(
     languageCode: settingsController.value.languageCode,
     systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
@@ -137,12 +138,10 @@ Future<void> _registerMainWindowHandlers({
           settingsController.value = AppSettings(
             petScale: (args['petScale'] as num?)?.toDouble() ??
                 settingsController.value.petScale,
-            desktopRoamSpeed:
-                (args['desktopRoamSpeed'] as num?)?.toDouble() ??
-                    settingsController.value.desktopRoamSpeed,
-            mobileRoamSpeed:
-                (args['mobileRoamSpeed'] as num?)?.toDouble() ??
-                    settingsController.value.mobileRoamSpeed,
+            desktopRoamSpeed: (args['desktopRoamSpeed'] as num?)?.toDouble() ??
+                settingsController.value.desktopRoamSpeed,
+            mobileRoamSpeed: (args['mobileRoamSpeed'] as num?)?.toDouble() ??
+                settingsController.value.mobileRoamSpeed,
             androidOverlayScale:
                 (args['androidOverlayScale'] as num?)?.toDouble() ??
                     settingsController.value.androidOverlayScale,

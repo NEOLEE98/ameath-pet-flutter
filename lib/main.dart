@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
@@ -13,6 +14,9 @@ import 'models/app_settings.dart';
 import 'platform/android_overlay_launcher.dart';
 import 'platform/desktop_startup.dart';
 import 'controllers/tray_controller.dart';
+import 'services/desktop_update_notice.dart';
+import 'services/update_checker.dart';
+import 'services/update_prompt.dart';
 import 'widgets/settings_page.dart';
 import 'widgets/settings_window_app.dart';
 import 'models/window_args.dart';
@@ -66,6 +70,7 @@ class AemeathPetApp extends StatefulWidget {
 
 class _AemeathPetAppState extends State<AemeathPetApp> {
   TrayController? trayController;
+  final GitHubUpdateChecker _updateChecker = GitHubUpdateChecker();
 
   @override
   void initState() {
@@ -80,6 +85,52 @@ class _AemeathPetAppState extends State<AemeathPetApp> {
         trayController?.refresh();
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdatesOnLaunch();
+    });
+  }
+
+  Future<void> _checkForUpdatesOnLaunch() async {
+    final result = await _updateChecker.checkForUpdates();
+    if (!mounted || result == null || !result.hasUpdate) {
+      return;
+    }
+
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      await _showDesktopUpdatePrompt(result);
+      return;
+    }
+
+    final dialogContext = rootNavigatorKey.currentContext;
+    if (dialogContext == null || !dialogContext.mounted) {
+      return;
+    }
+    await showUpdateAvailableDialog(dialogContext, result);
+  }
+
+  Future<void> _showDesktopUpdatePrompt(UpdateCheckResult result) async {
+    try {
+      await DesktopUpdateNoticeStore.save(result);
+      WindowController? settingsController;
+      final controllers = await WindowController.getAll();
+      for (final controller in controllers) {
+        final args = WindowArgs.fromJsonString(controller.arguments);
+        if (args.type == WindowArgs.typeSettings) {
+          settingsController = controller;
+          break;
+        }
+      }
+
+      settingsController ??= await WindowController.create(
+        WindowConfiguration(
+          arguments: WindowArgs.settings.toJsonString(),
+          hiddenAtLaunch: true,
+        ),
+      );
+
+      await settingsController.show();
+      await settingsController.invokeMethod('focus');
+    } catch (_) {}
   }
 
   void _openSettings() {
@@ -437,7 +488,8 @@ class _PetStageState extends State<PetStage> {
     final overlaySize = settings.androidOverlaySize;
     final screenSize = overlayScreenSize ??
         (WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
-            WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio);
+            WidgetsBinding
+                .instance.platformDispatcher.views.first.devicePixelRatio);
     final usable = _getAndroidUsableArea(screenSize, overlaySize);
     var next = Offset(
       usable.left + Random().nextDouble() * usable.width,
@@ -453,7 +505,8 @@ class _PetStageState extends State<PetStage> {
       overlayPosition = start;
     });
 
-    await _animateOverlayTo(start, next, speedPxPerSec: settings.mobileRoamSpeed);
+    await _animateOverlayTo(start, next,
+        speedPxPerSec: settings.mobileRoamSpeed);
     if (isDragging) return;
     setState(() {
       isMoving = false;
@@ -478,7 +531,8 @@ class _PetStageState extends State<PetStage> {
     final overlaySize = settings.androidOverlaySize;
     final screen = overlayScreenSize ??
         (WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
-            WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio);
+            WidgetsBinding
+                .instance.platformDispatcher.views.first.devicePixelRatio);
     final usable = _getAndroidUsableArea(screen, overlaySize);
     final current = await FlutterOverlayWindow.getOverlayPosition();
     final clamped = Offset(
@@ -696,8 +750,7 @@ class _OverlayDebugText extends StatelessWidget {
               'u ${usable.width.toStringAsFixed(1)}x'
               '${usable.height.toStringAsFixed(1)}',
             ),
-            if (!hasScreenInfo)
-              Text(l10n.noScreenInfo),
+            if (!hasScreenInfo) Text(l10n.noScreenInfo),
           ],
         ),
       ),
